@@ -1,8 +1,18 @@
 from flask import Flask,render_template,request
 app = Flask(__name__)
 import pickle
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+import pickle
 
-
+def data_split(data,ratio):
+    np.random.seed(42)
+    shuffled = np.random.permutation(len(data))
+    te_size=int(len(data) * ratio)
+    te_indices=shuffled[:te_size]
+    tr_indices=shuffled[te_size:]
+    return data.iloc[tr_indices],data.iloc[te_indices]
 
 
 file1=open('model.pkl','rb')
@@ -20,7 +30,19 @@ def prob():
             pain=int(fe['pain'])
             nose=int(fe['nose'])
             breath=int(fe['breath'])
+            df = pd.read_csv("coivd.csv")
+            train,test = data_split(df,0.2)
+
+            x_train = train[['fever','age','bodypain','cold','breath']].to_numpy()
+            x_test = test[['fever','age','bodypain','cold','breath']].to_numpy()
+
+            y_train = train[['prob']].to_numpy().reshape(1600,)
+            y_test = test[['prob']].to_numpy().reshape(400,)
             
+
+            clf = LogisticRegression(solver='lbfgs',multi_class='auto')
+
+            clf.fit(x_train,y_train)
             user_input=[[fever,age,pain,nose,breath]]
             prob3=clf.predict(user_input)
             if prob3==1:
